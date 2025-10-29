@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import uvicorn
 from datetime import datetime
 import pandas as pd
@@ -39,7 +39,22 @@ UPLOADS_ROOT = os.path.join(os.getcwd(), "uploads")
 os.makedirs(UPLOADS_ROOT, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOADS_ROOT), name="uploads")
 
+# Serve React frontend static files (for production)
+STATIC_ROOT = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(STATIC_ROOT):
+    app.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
+
 # CORS middleware
+# Allow all origins in production, specific in dev
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if os.getenv("ENV") == "production" else CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Create DB tables if not exist
 Base.metadata.create_all(bind=engine)
 @app.post("/api/auth/token")
@@ -50,13 +65,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token({"sub": user["username"], "role": user["role"]})
     return {"access_token": access_token, "token_type": "bearer", "role": user["role"]}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Sample data for development
 SAMPLE_CASES = [
@@ -738,6 +746,28 @@ async def get_courts():
         {"court_id": "MC-002", "name": "Magistrate Court Gulu", "region": "Northern"}
     ]
     return {"courts": courts}
+
+# Serve React app for any non-API routes (SPA routing)
+# This must be last to catch all non-API routes
+@app.get("/{path:path}")
+async def serve_spa(path: str):
+    """Serve React app for client-side routing"""
+    # Don't serve SPA for API, uploads, or static paths
+    if path.startswith(("api/", "uploads/", "static/")):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Check if requesting a specific static file
+    static_file = os.path.join(STATIC_ROOT, path) if os.path.exists(STATIC_ROOT) else None
+    if static_file and os.path.exists(static_file) and os.path.isfile(static_file):
+        return FileResponse(static_file)
+    
+    # Serve index.html (React Router will handle client-side routing)
+    index_path = os.path.join(STATIC_ROOT, "index.html") if os.path.exists(STATIC_ROOT) else None
+    if index_path and os.path.exists(index_path):
+        return FileResponse(index_path)
+    
+    # If no static files directory, return 404
+    raise HTTPException(status_code=404, detail="Frontend not built")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
