@@ -1,0 +1,13 @@
+case_id,court_id,location_region,case_type,filing_date,resolution_date,num_hearings,num_adjournments,judge_id_hashed,outcome_category,time_to_resolution_days
+C25B4-0001,HC-KLA,Central,Criminal,2025-01-19,2025-05-01,6,2,1029384756abcdef1029384756abcdef,Convicted,103
+C25B4-0002,HC-MBR,Western,Civil,2025-02-07,2025-05-30,3,1,aa11bb22cc33dd44ee55ff6677889900,Settled,113
+C25B4-0003,MC-GUL,Northern,Land,2025-03-05,2025-07-10,5,2,33445566778899aabbccddeeff001122,Resolved,127
+C25B4-0004,HC-MSK,Eastern,Family,2025-04-21,2025-09-14,7,3,8899aabbccddeeff0011223344556677,Resolved,146
+C25B4-0005,MC-KLA,Central,Criminal,2025-05-02,2025-08-12,4,1,ffeeddccbbaa99887766554433221100,Acquitted,102
+C25B4-0006,HC-GUL,Northern,Civil,2025-06-18,2025-10-23,6,2,1234567890abcdef1234567890abcdef,Resolved,127
+C25B4-0007,MC-MBR,Western,Land,2025-02-25,2025-06-01,4,1,abcdefabcdefabcdefabcdefabcdef12,Settled,96
+C25B4-0008,HC-MSK,Eastern,Criminal,2025-01-31,2025-05-29,5,2,0a1b2c3d4e5f60718293a4b5c6d7e8f9,Convicted,118
+C25B4-0009,HC-KLA,Central,Family,2025-03-16,2025-07-30,4,2,4444555566667777888899990000aaaa,Resolved,136
+C25B4-0010,MC-MSK,Eastern,Civil,2025-06-07,2025-09-15,5,1,7777888899990000aaaabbbbccccdddd,Resolved,100
+
+

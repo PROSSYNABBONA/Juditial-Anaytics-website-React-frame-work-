@@ -1,0 +1,11 @@
+case_id,court_id,location_region,case_type,filing_date,resolution_date,num_hearings,num_adjournments,judge_id_hashed,outcome_category,time_to_resolution_days
+CASE-001,HC-001,Central,Civil,2023-01-15,2023-06-20,4,2,JUDGE-001,Settled,156
+CASE-002,MC-001,Northern,Criminal,2023-02-10,2023-08-15,6,3,JUDGE-002,Convicted,186
+CASE-003,HC-002,Central,Land,2023-03-05,2023-09-12,5,2,JUDGE-003,Settled,191
+CASE-004,MC-002,Western,Civil,2023-04-20,2023-10-25,3,1,JUDGE-004,Dismissed,188
+CASE-005,HC-003,Eastern,Criminal,2023-05-12,2023-11-18,7,4,JUDGE-005,Convicted,190
+CASE-006,MC-003,Central,Land,2023-06-08,2023-12-15,4,2,JUDGE-006,Settled,189
+CASE-007,HC-001,Central,Civil,2023-07-22,2024-01-28,5,3,JUDGE-001,Settled,190
+CASE-008,MC-001,Northern,Criminal,2023-08-15,2024-02-20,6,2,JUDGE-002,Acquitted,188
+CASE-009,HC-002,Central,Land,2023-09-10,2024-03-15,4,1,JUDGE-003,Settled,186
+CASE-010,MC-002,Western,Civil,2023-10-05,2024-04-10,3,2,JUDGE-004,Dismissed,187

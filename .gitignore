@@ -1,0 +1,68 @@
+# Node modules and cache
+node_modules/
+**/node_modules/
+**/.cache/
+**/*.pack
+.npm/
+.pnpm-store/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Backend uploads and data
+backend/uploads/
+judicial-dashboard/backend/uploads/
+*.db
+*.sqlite
+
+# Frontend build
+frontend/build/
+judicial-dashboard/frontend/build/
+judicial-dashboard/frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Database
+*.sql
+*.db-journal
+
+# Large data files (if not needed in repo)
+*.xls
+*.xlsx
+*.pdf
+!judicial-dashboard/data/*.csv
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
