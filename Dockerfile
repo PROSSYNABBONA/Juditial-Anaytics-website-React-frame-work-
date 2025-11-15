@@ -5,8 +5,13 @@ FROM node:18-alpine AS frontend-build
 WORKDIR /app
 COPY judicial-dashboard/frontend/package*.json ./judicial-dashboard/frontend/
 WORKDIR /app/judicial-dashboard/frontend
-RUN npm ci
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV CI=true
+# Ensure devDependencies are installed (react-scripts lives in devDeps)
+RUN npm ci --include=dev
 COPY judicial-dashboard/frontend/ ./
+# Fix potential CRLF/permission on bin scripts (react-scripts)
+RUN chmod -R +x node_modules/.bin || true
 RUN npm run build
 
 # Stage 2: Python backend with frontend
