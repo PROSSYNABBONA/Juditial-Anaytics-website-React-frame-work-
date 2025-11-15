@@ -87,8 +87,12 @@ const Navbar: React.FC = () => {
         }}
       >
         <Box sx={{ overflow: 'auto' }}>
-          <Box sx={{ p: 2 }}>
-            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} />
+          <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <img
+              src="/logo2.png"
+              alt="Logo"
+              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', display: 'block', border: '2px solid #eee' }}
+            />
           </Box>
           <List>
             {menuItems.map((item) => (
@@ -123,8 +127,12 @@ const Navbar: React.FC = () => {
         open
       >
         <Box sx={{ overflow: 'auto' }}>
-          <Box sx={{ p: 2 }}>
-            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} />
+          <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <img
+              src="/logo2.png"
+              alt="Logo"
+              style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', display: 'block', border: '2px solid #eee' }}
+            />
           </Box>
           <List>
             {menuItems.map((item) => (

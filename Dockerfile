@@ -6,7 +6,7 @@ WORKDIR /app
 COPY judicial-dashboard/frontend/package*.json ./judicial-dashboard/frontend/
 WORKDIR /app/judicial-dashboard/frontend
 RUN npm ci
-COPY judicial-dashboard/frontend/ ./judicial-dashboard/frontend/
+COPY judicial-dashboard/frontend/ ./
 RUN npm run build
 
 # Stage 2: Python backend with frontend
