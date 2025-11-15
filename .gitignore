@@ -66,3 +66,17 @@ logs/
 *.temp
 .cache/
 
+
+# Large/binary files
+*.xls
+*.xlsx
+*.pdf
+*.docx
+*.pptx
+
+# Local env/build
+venv/
+node_modules/
+judicial-dashboard/frontend/build/
+judicial-dashboard/frontend/.cache/
+uploads/
