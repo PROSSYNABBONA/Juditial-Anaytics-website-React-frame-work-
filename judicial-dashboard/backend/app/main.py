@@ -66,36 +66,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer", "role": user["role"]}
 
 
-# Sample data for development
-SAMPLE_CASES = [
-    {
-        "case_id": "CASE-001",
-        "court_id": "HC-001",
-        "location_region": "Central",
-        "case_type": "Civil",
-        "filing_date": "2023-01-15",
-        "resolution_date": "2023-06-20",
-        "num_hearings": 4,
-        "num_adjournments": 2,
-        "judge_id_hashed": "JUDGE-001",
-        "outcome_category": "Settled",
-        "time_to_resolution_days": 156
-    },
-    {
-        "case_id": "CASE-002",
-        "court_id": "MC-001",
-        "location_region": "Northern",
-        "case_type": "Criminal",
-        "filing_date": "2023-02-10",
-        "resolution_date": "2023-08-15",
-        "num_hearings": 6,
-        "num_adjournments": 3,
-        "judge_id_hashed": "JUDGE-002",
-        "outcome_category": "Convicted",
-        "time_to_resolution_days": 186
-    }
-]
-
 @app.get("/")
 async def root():
     return {"message": "Judicial Analytics Dashboard API", "status": "running"}
@@ -106,30 +76,34 @@ async def health_check():
 
 @app.get("/api/cases")
 async def get_cases(db: Session = Depends(get_db)):
-    """Get all cases (from DB if available, else fallback to sample)."""
+    """
+    Get all cases from the database only.
+    If there are no cases, return an empty list instead of sample data so the UI appears "cleared".
+    """
     try:
         db_cases = db.query(Case).limit(500).all()
-        if db_cases:
-            cases = [
-                {
-                    "case_id": c.case_id,
-                    "court_id": c.court_id,
-                    "location_region": c.location_region,
-                    "case_type": c.case_type,
-                    "filing_date": c.filing_date.isoformat() if c.filing_date else None,
-                    "resolution_date": c.resolution_date.isoformat() if c.resolution_date else None,
-                    "num_hearings": c.num_hearings,
-                    "num_adjournments": c.num_adjournments,
-                    "judge_id_hashed": c.judge_id_hashed,
-                    "outcome_category": c.outcome_category,
-                    "time_to_resolution_days": c.time_to_resolution_days,
-                }
-                for c in db_cases
-            ]
-            return {"cases": cases, "total": len(cases)}
-    except Exception:
-        pass
-    return {"cases": SAMPLE_CASES, "total": len(SAMPLE_CASES)}
+        if not db_cases:
+            return {"cases": [], "total": 0}
+        cases = [
+            {
+                "case_id": c.case_id,
+                "court_id": c.court_id,
+                "location_region": c.location_region,
+                "case_type": c.case_type,
+                "filing_date": c.filing_date.isoformat() if c.filing_date else None,
+                "resolution_date": c.resolution_date.isoformat() if c.resolution_date else None,
+                "num_hearings": c.num_hearings,
+                "num_adjournments": c.num_adjournments,
+                "judge_id_hashed": c.judge_id_hashed,
+                "outcome_category": c.outcome_category,
+                "time_to_resolution_days": c.time_to_resolution_days,
+            }
+            for c in db_cases
+        ]
+        return {"cases": cases, "total": len(cases)}
+    except Exception as e:
+        # On error, return empty instead of falling back to hard-coded samples
+        return {"cases": [], "total": 0}
 
 @app.get("/api/cases/{case_id}")
 async def get_case(case_id: str, db: Session = Depends(get_db)):
@@ -152,11 +126,9 @@ async def get_case(case_id: str, db: Session = Depends(get_db)):
             }
             return {"case": case}
     except Exception:
-        pass
-    case = next((c for c in SAMPLE_CASES if c["case_id"] == case_id), None)
-    if not case:
-        raise HTTPException(status_code=404, detail="Case not found")
-    return {"case": case}
+        # If the DB query fails, treat as not found instead of using sample data
+        raise HTTPException(status_code=500, detail="Error retrieving case")
+    raise HTTPException(status_code=404, detail="Case not found")
 
 def _apply_filters(df: pd.DataFrame, start_date: Optional[str], end_date: Optional[str], regions: Optional[List[str]], case_types: Optional[List[str]]) -> pd.DataFrame:
     if df is None or df.empty:
@@ -197,7 +169,10 @@ async def get_analytics_summary(
     region: Optional[str] = Query(None, description="Comma-separated regions"),
     case_type: Optional[str] = Query(None, description="Comma-separated case types"),
 ):
-    """Get dashboard summary statistics from DB; fallback to sample."""
+    """
+    Get dashboard summary statistics from DB only.
+    If there is no data, return zeros/empty structures so the dashboard appears cleared.
+    """
     try:
         records = db.query(Case).all()
         if records:
@@ -219,11 +194,11 @@ async def get_analytics_summary(
                 })
             df = pd.DataFrame(data)
         else:
-            df = pd.DataFrame(SAMPLE_CASES)
+            df = pd.DataFrame()
     except Exception:
-        df = pd.DataFrame(SAMPLE_CASES)
+        df = pd.DataFrame()
 
-    # Apply filters
+    # Apply filters (no-op on empty df)
     df = _apply_filters(df, start_date, end_date, _split_list(region), _split_list(case_type))
 
     # Handle potential NaNs/empties
@@ -233,18 +208,30 @@ async def get_analytics_summary(
         except Exception:
             return 0
 
-    total_cases = int(len(df))
-    resolved_cases = int(df.get("resolution_date", pd.Series(dtype=object)).dropna().shape[0])
-    summary = {
-        "total_cases": total_cases,
-        "avg_resolution_time": safe_mean(df.get("time_to_resolution_days", pd.Series(dtype=float))),
-        "cases_by_type": df.get("case_type", pd.Series(dtype=str)).value_counts().to_dict(),
-        "cases_by_region": df.get("location_region", pd.Series(dtype=str)).value_counts().to_dict(),
-        "avg_hearings": safe_mean(df.get("num_hearings", pd.Series(dtype=float))),
-        "avg_adjournments": safe_mean(df.get("num_adjournments", pd.Series(dtype=float))),
-        "resolved_cases": resolved_cases,
-        "disposal_rate": (resolved_cases / total_cases) if total_cases else 0.0,
-    }
+    total_cases = int(len(df)) if df is not None else 0
+    if df is None or df.empty:
+        summary = {
+            "total_cases": 0,
+            "avg_resolution_time": 0,
+            "cases_by_type": {},
+            "cases_by_region": {},
+            "avg_hearings": 0,
+            "avg_adjournments": 0,
+            "resolved_cases": 0,
+            "disposal_rate": 0.0,
+        }
+    else:
+        resolved_cases = int(df.get("resolution_date", pd.Series(dtype=object)).dropna().shape[0])
+        summary = {
+            "total_cases": total_cases,
+            "avg_resolution_time": safe_mean(df.get("time_to_resolution_days", pd.Series(dtype=float))),
+            "cases_by_type": df.get("case_type", pd.Series(dtype=str)).value_counts().to_dict(),
+            "cases_by_region": df.get("location_region", pd.Series(dtype=str)).value_counts().to_dict(),
+            "avg_hearings": safe_mean(df.get("num_hearings", pd.Series(dtype=float))),
+            "avg_adjournments": safe_mean(df.get("num_adjournments", pd.Series(dtype=float))),
+            "resolved_cases": resolved_cases,
+            "disposal_rate": (resolved_cases / total_cases) if total_cases else 0.0,
+        }
 
     return {"summary": summary}
 
@@ -256,11 +243,11 @@ async def get_time_series(
     region: Optional[str] = Query(None),
     case_type: Optional[str] = Query(None),
 ):
-    """Monthly inflow and resolved counts based on filing/resolution dates."""
+    """Monthly inflow and resolved counts based on filing/resolution dates, from DB only."""
     try:
         records = db.query(Case).all()
         if not records:
-            df = pd.DataFrame(SAMPLE_CASES)
+            df = pd.DataFrame()
         else:
             df = pd.DataFrame([
                 {
@@ -271,6 +258,9 @@ async def get_time_series(
             ])
         # Apply filters
         df = _apply_filters(df, start_date, end_date, _split_list(region), _split_list(case_type))
+        if df is None or df.empty:
+            return {"series": []}
+
         df["filing_month"] = pd.to_datetime(df.get("filing_date"), errors='coerce').dt.to_period('M')
         df["resolution_month"] = pd.to_datetime(df.get("resolution_date"), errors='coerce').dt.to_period('M')
         inflow = df.dropna(subset=["filing_month"]).groupby("filing_month").size()
@@ -289,15 +279,13 @@ async def get_resolution_distribution(
     region: Optional[str] = Query(None),
     case_type: Optional[str] = Query(None),
 ):
-    """Bucketized distribution of time_to_resolution_days."""
+    """Bucketized distribution of time_to_resolution_days from DB only."""
     try:
         records = db.query(Case.case_type, Case.location_region, Case.filing_date, Case.time_to_resolution_days).all()
         # Create DataFrame to filter
         df = pd.DataFrame(records, columns=['case_type', 'location_region', 'filing_date', 'time_to_resolution_days'])
         df = _apply_filters(df, start_date, end_date, _split_list(region), _split_list(case_type))
         values = [int(v) for v in df['time_to_resolution_days'].dropna().tolist()]
-        if not values:
-            values = [c.get("time_to_resolution_days") for c in SAMPLE_CASES if c.get("time_to_resolution_days") is not None]
         bins = [(0,30), (31,90), (91,180), (181,365), (366,99999)]
         labels = ["0-30 days", "31-90 days", "91-180 days", "181-365 days", "365+ days"]
         counts = []
@@ -315,13 +303,13 @@ async def get_court_performance(
     region: Optional[str] = Query(None),
     case_type: Optional[str] = Query(None),
 ):
-    """Resolution rate per court (resolved/total)."""
+    """Resolution rate per court (resolved/total) from DB only."""
     try:
         records = db.query(Case.court_id, Case.location_region, Case.case_type, Case.filing_date, Case.resolution_date).all()
-        if not records:
-            df = pd.DataFrame(SAMPLE_CASES)
-        else:
-            df = pd.DataFrame(records, columns=['court_id','location_region','case_type','filing_date','resolution_date'])
+        df = pd.DataFrame(records, columns=['court_id','location_region','case_type','filing_date','resolution_date'])
+        if df is None or df.empty:
+            return {"performance": []}
+
         df = _apply_filters(df, start_date, end_date, _split_list(region), _split_list(case_type))
         tmp = list(zip(df.get('court_id').fillna('Unknown'), df.get('resolution_date')))
         perf = {}
@@ -422,15 +410,50 @@ async def get_predictions(db: Session = Depends(get_db)):
     return {"predictions": predictions}
 
 @app.post("/api/analytics/train-models")
-async def train_models():
-    """Train both Linear Regression and Random Forest models"""
+async def train_models(db: Session = Depends(get_db)):
+    """
+    Train both Linear Regression and Random Forest models using all cases
+    currently stored in the database. If there is no data, return an error.
+    """
     try:
-        # Load sample data for training
-        df = pd.DataFrame(SAMPLE_CASES)
+        records = db.query(Case).all()
+        if not records:
+            return {"training_result": {"error": "No data available in database for training"}}
+        data = []
+        for c in records:
+            data.append({
+                "case_id": c.case_id,
+                "court_id": c.court_id,
+                "location_region": c.location_region,
+                "case_type": c.case_type,
+                "filing_date": c.filing_date,
+                "resolution_date": c.resolution_date,
+                "num_hearings": c.num_hearings,
+                "num_adjournments": c.num_adjournments,
+                "judge_id_hashed": c.judge_id_hashed,
+                "outcome_category": c.outcome_category,
+                "time_to_resolution_days": c.time_to_resolution_days,
+            })
+        df = pd.DataFrame(data)
         result = ml_service.train_models(df)
         return {"training_result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}")
+
+
+@app.post("/api/admin/reset-data")
+async def reset_data(db: Session = Depends(get_db)):
+    """
+    Danger: wipe all case records from the database and reset ML model state.
+    Intended for admin/testing to clear Dashboard/Analytics/Cases/predictions.
+    """
+    try:
+        db.query(Case).delete()
+        db.commit()
+        ml_service.reset()
+        return {"message": "All cases deleted and models reset"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reset failed: {str(e)}")
 
 @app.post("/api/analytics/train-from-file")
 async def train_from_file(file_path: str = Form(...), db: Session = Depends(get_db)):

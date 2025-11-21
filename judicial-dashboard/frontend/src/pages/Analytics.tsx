@@ -81,6 +81,24 @@ const Analytics: React.FC = () => {
     loadAll();
   }, []);
 
+  const handleResetData = async () => {
+    if (!window.confirm('This will delete all cases and reset analytics/predictions. Continue?')) {
+      return;
+    }
+    try {
+      setLoading(true);
+      await apiService.resetData();
+      // Re-fetch analytics which will now be empty/zeroed
+      await loadAll();
+      (window as any).dispatchEvent(new Event('data-updated'));
+      alert('All data and models have been reset.');
+    } catch (_) {
+      alert('Failed to reset data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -102,15 +120,27 @@ const Analytics: React.FC = () => {
       <Grid container spacing={3}>
         {/* Export metrics to report */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="contained" onClick={async () => {
-              try {
-                await apiService.exportMetricsToReport();
-                alert('Report updated with latest metrics.');
-              } catch (_) {
-                alert('Failed to update report.');
-              }
-            }}>Export metrics to report</Button>
+          <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleResetData}
+            >
+              Reset Data (Clear DB & Models)
+            </Button>
+            <Button
+              variant="contained"
+              onClick={async () => {
+                try {
+                  await apiService.exportMetricsToReport();
+                  alert('Report updated with latest metrics.');
+                } catch (_) {
+                  alert('Failed to update report.');
+                }
+              }}
+            >
+              Export metrics to report
+            </Button>
           </Paper>
         </Grid>
         {/* Filters */}

@@ -34,6 +34,15 @@ const Cases: React.FC = () => {
     fetchCases();
   }, []);
 
+  // Refresh cases whenever other parts of the app signal that data changed
+  useEffect(() => {
+    const handleDataUpdated = () => {
+      fetchCases();
+    };
+    (window as any).addEventListener('data-updated', handleDataUpdated);
+    return () => (window as any).removeEventListener('data-updated', handleDataUpdated);
+  }, []);
+
   const fetchCases = async () => {
     try {
       setLoading(true);

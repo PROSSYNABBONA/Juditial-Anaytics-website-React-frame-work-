@@ -124,6 +124,12 @@ export const apiService = {
     return response.data;
   },
 
+  // Reset all data and models on the backend
+  async resetData(): Promise<{ message: string }> {
+    const response = await api.post('/api/admin/reset-data');
+    return response.data;
+  },
+
   // Get courts
   async getCourts(): Promise<{ courts: any[] }> {
     const response = await api.get('/api/courts');

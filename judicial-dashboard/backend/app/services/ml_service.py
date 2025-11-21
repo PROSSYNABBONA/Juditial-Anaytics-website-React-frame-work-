@@ -19,6 +19,15 @@ class JudicialMLService:
         self.is_trained = False
         self.model_performance = {}
         self.training_data_info = {}
+
+    def reset(self):
+        """Reset all model state so the system behaves as if never trained."""
+        self.linear_model = None
+        self.random_forest_model = None
+        self.feature_columns = []
+        self.is_trained = False
+        self.model_performance = {}
+        self.training_data_info = {}
         
     def prepare_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Prepare features for ML model"""
